@@ -12,23 +12,10 @@ galaxy_info:
         - 10.15
         - 11
         - 12
-        - "High-Sierra"
-        - "Mojave"
-        - "Catalina"
-        - "Big-Sur"
-        - "Monterey"
     - name: macOS
       versions:
-        - 10.13
-        - 10.14
-        - 10.15
-        - 11
-        - 12
         - "High-Sierra"
-        - "Mojave"
-        - "Catalina"
         - "Big-Sur"
-        - "Monterey"
 
   galaxy_tags:
     - github
