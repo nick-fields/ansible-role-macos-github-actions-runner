@@ -11,7 +11,6 @@ galaxy_info:
         - 10.14
         - 10.15
         - 11
-        - 12
     - name: macOS
       versions:
         - "High-Sierra"
