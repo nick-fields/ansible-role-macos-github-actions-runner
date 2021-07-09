@@ -2,4 +2,4 @@
 - hosts: localhost
   remote_user: root
   roles:
-    - macos_github_actions_runner
+    - role: ../..
