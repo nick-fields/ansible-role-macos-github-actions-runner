@@ -1,18 +1,6 @@
 ---
 - name: Uninstall Service
   block:
-    - name: Remove service LaunchAgent
-      file:
-        path: "{{ runner_launchagent_path }}"
-        state: absent
-      when: "{{ runner_service_installed }}"
-
-    - name: Remove service LaunchDaemon
-      file:
-        path: "{{ runner_launchdaemon_path }}"
-        state: absent
-      when: "{{ runner_service_installed }}"
-
     - name: Uninstall registered offline runner service
       ignore_errors: yes
       command: "{{ runner_dir }}/./svc.sh uninstall"
