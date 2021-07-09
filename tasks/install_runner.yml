@@ -1,0 +1,92 @@
+---
+- name: Create directory
+  file:
+    path: "{{ runner_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ runner_user }}"
+
+- name: Find the latest runner version (RUN ONCE)
+  uri:
+    url: "https://api.github.com/repos/actions/runner/releases/latest"
+    headers:
+      Content-Type: "application/json"
+    method: GET
+    return_content: yes
+    status_code: 200
+    body_format: json
+  check_mode: false
+  register: api_response
+  run_once: yes
+  become: false
+  delegate_to: localhost
+  when: runner_version == "latest"
+
+- name: Set runner_version variable (if it is latest)
+  set_fact:
+    runner_version: "{{ api_response.json.tag_name | regex_replace('^v', '') }}"
+  when: runner_version == "latest"
+
+- name: Check if desired version already installed
+  command: "grep -i {{ runner_version }} {{ runner_dir }}/bin/Runner.Listener.deps.json"
+  register: runner_installed
+  check_mode: false
+  changed_when: False
+  ignore_errors: yes
+
+- name: Download runner package version {{ runner_version }} to remote (RUN ONCE)
+  get_url:
+    url:
+      "https://github.com/actions/runner/releases/download/v{{ runner_version }}/\
+      actions-runner-{{ github_actions_os }}-{{ github_actions_architecture }}-{{ runner_version }}.tar.gz"
+    dest: "{{ runner_dir }}/actions-runner-{{ github_actions_os }}-{{ github_actions_architecture }}-{{ runner_version }}.tar.gz"
+    force: no
+  run_once: yes
+  when: runner_version not in runner_installed.stdout or reinstall_runner
+
+- name: Untar package on remote
+  shell: "tar xzf {{ runner_dir }}/actions-runner-{{ github_actions_os }}-{{ github_actions_architecture }}-{{ runner_version }}.tar.gz"
+  args:
+    chdir: "{{ runner_dir }}"
+  when: runner_version not in runner_installed.stdout or reinstall_runner
+
+- name: Register
+  block:
+    - name: Register runner for {{ runner_org | ternary('org', 'repo') }}
+      command: "./config.sh \
+        --url {{ runner_org | ternary(org_url, repo_url) }} \
+        --token {{ registration.json.token }} \
+        --name {{ runner_name }} \
+        --labels {{ runner_labels | join(',') }} \
+        --unattended \
+        --replace \
+        {{ runner_extra_config_args }}"
+      args:
+        chdir: "{{ runner_dir }}"
+      vars:
+        repo_url: "{{ github_url }}/{{ github_owner | default(github_account) }}/{{ github_repo }}"
+        org_url: "{{ github_url }}/{{ github_owner | default(github_account) }}"
+      become: yes
+      become_user: "{{ runner_user }}"
+      no_log: "{{ hide_sensitive_logs | bool }}"
+  rescue:
+    # throw more meaningful error for known failure conditions
+    - fail:
+        msg: "The local machine is out of sync with the server.  If running in Vagrant and VirtualBox, reload box with greater timesync-threshold"
+      when: "'out of sync with the server' in ansible_failed_result.stderr"
+    # throw error otherwise
+    - fail:
+        msg: "{{ ansible_failed_result.stderr }}"
+
+- name: Install service
+  command: "./svc.sh install {{ runner_user }}"
+  args:
+    chdir: "{{ runner_dir }}"
+  when: install_runner
+
+- name: Start service
+  command: "./svc.sh start"
+  args:
+    chdir: "{{ runner_dir }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: install_runner

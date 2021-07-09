@@ -1,0 +1,8 @@
+---
+- name: Check required variables (RUN ONCE)
+  assert:
+    that:
+      - github_account | length > 0
+      - access_token | length > 0
+    fail_msg: "Required variable(s) not found"
+  run_once: yes

@@ -1,0 +1,37 @@
+galaxy_info:
+  author: Nick Fields
+  description: Deploy Github Actions self-hosted runner on MacOS
+  license: license (MIT)
+  min_ansible_version: 2.9.8
+  platforms:
+    - name: MacOSX
+      versions:
+        - 10.13
+        - 10.14
+        - 10.15
+        - 11
+        - 12
+        - "High-Sierra"
+        - "Mojave"
+        - "Catalina"
+        - "Big-Sur"
+        - "Monterey"
+    - name: macOS
+      versions:
+        - 10.13
+        - 10.14
+        - 10.15
+        - 11
+        - 12
+        - "High-Sierra"
+        - "Mojave"
+        - "Catalina"
+        - "Big-Sur"
+        - "Monterey"
+
+  galaxy_tags:
+    - github
+    - actions
+    - self-hosted
+    - runner
+    - cicd

@@ -1,0 +1,69 @@
+---
+- name: Uninstall Service
+  block:
+    - name: Remove service LaunchAgent
+      file:
+        path: "{{ runner_launchagent_path }}"
+        state: absent
+      when: "{{ runner_service_installed }}"
+
+    - name: Remove service LaunchDaemon
+      file:
+        path: "{{ runner_launchdaemon_path }}"
+        state: absent
+      when: "{{ runner_service_installed }}"
+
+    - name: Uninstall registered offline runner service
+      ignore_errors: yes
+      command: "{{ runner_dir }}/./svc.sh uninstall"
+      args:
+        chdir: "{{ runner_dir }}"
+      become: yes
+      become_user: "{{ runner_user }}"
+  when: runner_service_installed
+
+- name: Unconfigure Runner
+  block:
+    - name: Check if runner directory exists
+      stat:
+        path: "{{ runner_dir }}"
+      register: runner_dir_stat
+
+    - name: Get remove token to prune registered offline runner
+      ignore_errors: yes
+      uri:
+        url: "{{ github_base_url }}/actions/runners/remove-token"
+        headers:
+          Authorization: "token {{ access_token }}"
+          Accept: "application/vnd.github.v3+json"
+        method: POST
+        status_code: 201
+        force_basic_auth: yes
+      register: unregister
+
+    - name: Unconfigure registered runner via config.sh script
+      ignore_errors: yes
+      command: "{{ runner_dir }}/./config.sh remove --token {{ unregister.json.token }}"
+      args:
+        chdir: "{{ runner_dir }}"
+      become: yes
+      become_user: "{{ runner_user }}"
+      when: runner_dir_stat.stat.exists
+
+    # this is just in case a previously registered runner with the same name exists
+    - name: Unconfigure registered runner via api
+      ignore_errors: yes
+      uri:
+        url: "{{ github_base_url }}/actions/runners/{{ runner_id }}"
+        headers:
+          Authorization: "token {{ access_token }}"
+          Accept: "application/vnd.github.v3+json"
+        method: DELETE
+        status_code: 204
+        force_basic_auth: yes
+      register: registered_runners
+      when: not runner_dir_stat.stat.exists and runner_id is defined
+  when: runner_configured or runner_registered
+
+- name: Refresh services facts
+  service_facts:

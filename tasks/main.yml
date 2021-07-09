@@ -1,0 +1,14 @@
+---
+- name: Assert
+  include_tasks: assert.yml
+
+- name: Collect Info
+  include_tasks: collect_info.yml
+
+- name: Uninstall Runner
+  include_tasks: uninstall_runner.yml
+  when: uninstall_runner
+
+- name: Install Runner
+  include_tasks: install_runner.yml
+  when: install_runner

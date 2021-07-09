@@ -1,0 +1,87 @@
+---
+- name: Collect initial facts
+  set_fact:
+    github_base_url: "{{ runner_org | ternary(org_base,repo_base) }}"
+    runner_service: "{{ computed_name }}"
+    runner_launchagent_path: "/Users/{{ runner_user }}/Library/LaunchAgents/{{ computed_name }}.plist"
+    runner_launchdaemon_path: "/Library/LaunchDaemons/{{ computed_name }}.plist"
+  vars:
+    repo_base: "{{ github_api_url }}/repos/{{ github_owner | default(github_account) }}/{{ github_repo }}"
+    org_base: "{{ github_api_url }}/orgs/{{ github_owner | default(github_account) }}"
+    computed_name: "actions.runner.{{ ([([(github_owner | default(github_account)), github_repo ] | join('-'))[:45], runner_name] | join('.'))[:57] }}"
+
+- name: Get registration token (RUN ONCE)
+  uri:
+    url: "{{ github_base_url }}/actions/runners/registration-token"
+    headers:
+      Authorization: "token {{ access_token }}"
+      Accept: "application/vnd.github.v3+json"
+    method: POST
+    status_code: 201
+    force_basic_auth: yes
+  register: registration
+  run_once: yes
+
+- name: Check currently registered org runners (RUN ONCE)
+  uri:
+    url: "{{ github_base_url }}/actions/runners"
+    headers:
+      Authorization: "token {{ access_token }}"
+      Accept: "application/vnd.github.v3+json"
+    method: GET
+    status_code: 200
+    force_basic_auth: yes
+  register: registered_runners
+  run_once: yes
+
+- name: Check if LaunchDaemon installed
+  stat:
+    path: "{{ runner_launchdaemon_path }}"
+  register: runner_service_daemon
+
+- name: Check if LaunchAgent installed
+  stat:
+    path: "{{ runner_launchagent_path }}"
+  register: runner_service_agent
+
+- name: Check if runner is configured locally
+  stat:
+    path: "{{ runner_dir }}/.runner"
+  register: runner_config_file
+
+- name: Collect additional facts
+  set_fact:
+    # whether service is registered on github
+    runner_registered: "{{ registered }}"
+    # whether registered service is online
+    runner_online: "{{ is_online }}"
+    # registered runner id
+    runner_id: "{{ id }}"
+    # whether service is installed locally
+    runner_service_installed: "{{ installed }}"
+    # whether service is configured locally
+    runner_configured: "{{ configured }}"
+    # whether to run install scripts
+    install_runner: "{{ reinstall_runner or not is_online or not runner_registered }}"
+    # whether to run uninstall scripts
+    uninstall_runner: "{{ reinstall_runner or registered or installed or configured }}"
+  vars:
+    query: "[? name == '{{ runner_name }}']"
+    status: "{{ (registered_runners.json.runners | json_query(query) | first).status | default('n/a') }}"
+    id: "{{ (registered_runners.json.runners | json_query(query) | first).id | default() }}"
+    is_online: "{{ (status|lower) == 'online' }}"
+    configured: "{{ runner_config_file.stat.exists }}"
+    installed: "{{ runner_service_daemon.stat.exists or runner_service_agent.stat.exists }}"
+    registered: "{{ registered_runners.json.runners | json_query(query) | length > 0 }}"
+
+- name: Collected Facts
+  debug:
+    msg:
+      - "github_base_url: {{ github_base_url }}"
+      - "runner_service: {{ runner_service }}"
+      - "install_runner: {{ install_runner }}"
+      - "runner_registered: {{ runner_registered }}"
+      - "runner_online: {{ runner_online }}"
+      - "runner_service_installed: {{ runner_service_installed }}"
+      - "runner_configured: {{ runner_configured }}"
+      - "runner_id: {{ runner_id is defined | ternary(runner_id, 'n/a') }}"

@@ -1,0 +1,4 @@
+---
+# vars file for ansible-macos-github-actions-runner-role
+github_actions_os: "osx"
+github_actions_architecture: "x64"
