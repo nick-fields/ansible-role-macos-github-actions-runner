@@ -1,4 +1,4 @@
-# Role Name
+# macos-github-actions-runner
 
 This role will install a GitHub Actions self-hosted runner at either the org or repo level on a MacOS/MacOSX. It will perform a clean install, reinstall if desired, reinstall if service is not running, or uninstall. Inspired heavily by [ansible-github_actions_runner](https://github.com/MonolithProjects/ansible-github_actions_runner) but modified to work with MacOS.
 
