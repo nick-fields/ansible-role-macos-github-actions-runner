@@ -1,4 +1,5 @@
 galaxy_info:
+  role_name: macos_github_actions_runner
   author: Nick Fields
   description: Deploy Github Actions self-hosted runner on MacOS
   license: license (MIT)
