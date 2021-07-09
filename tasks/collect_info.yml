@@ -62,7 +62,7 @@
     # whether service is configured locally
     runner_configured: "{{ configured }}"
     # whether to run install scripts
-    install_runner: "{{ reinstall_runner or not is_online or not runner_registered }}"
+    install_runner: "{{ reinstall_runner or not is_online or not registered }}"
     # whether to run uninstall scripts
     uninstall_runner: "{{ reinstall_runner or registered or installed or configured }}"
   vars:
