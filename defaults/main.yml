@@ -1,6 +1,6 @@
 ---
 # Runner user - user under which is the local runner service running
-runner_user: "vagrant"
+runner_user: "{{ lookup('env','USER') }}"
 
 # Directory where the local runner will be installed
 runner_dir: ~/actions-runner
