@@ -53,7 +53,7 @@
 - name: Register
   block:
     - name: Register runner for {{ runner_org | ternary('org', 'repo') }}
-      command: "./config.sh \
+      command: "source ~/.profile ; ./config.sh \
         --url {{ runner_org | ternary(org_url, repo_url) }} \
         --token {{ registration.json.token }} \
         --name {{ runner_name }} \
