@@ -50,10 +50,10 @@
     chdir: "{{ runner_dir }}"
   when: runner_version not in runner_installed.stdout or reinstall_runner
 
-- name: Register
+- name: Configure
   block:
-    - name: Register runner for {{ runner_org | ternary('org', 'repo') }}
-      command: "source ~/.profile ; ./config.sh \
+    - name: Configure runner for {{ runner_org | ternary('org', 'repo') }}
+      command: "./config.sh \
         --url {{ runner_org | ternary(org_url, repo_url) }} \
         --token {{ registration.json.token }} \
         --name {{ runner_name }} \
@@ -66,6 +66,10 @@
       vars:
         repo_url: "{{ github_url }}/{{ github_owner | default(github_account) }}/{{ github_repo }}"
         org_url: "{{ github_url }}/{{ github_owner | default(github_account) }}"
+      # config.sh script only sees system path which doesn't usr/local/bin or home bin
+      # this prevents runner from being able to access most non-system dependencies (brew, node, npm, etc)
+      environment:
+        PATH: /usr/local/bin:{{ ansible_env.HOME }}/bin:{{ ansible_env.PATH }}
       become: yes
       become_user: "{{ runner_user }}"
       no_log: "{{ hide_sensitive_logs | bool }}"
