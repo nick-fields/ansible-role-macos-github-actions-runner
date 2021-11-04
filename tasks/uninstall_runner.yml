@@ -51,6 +51,11 @@
         force_basic_auth: yes
       register: registered_runners
       when: not runner_dir_stat.stat.exists and runner_id is defined
+
+    - name: Cleanup any remaining config if exists
+      file:
+        path: "{{ runner_dir }}/.runner"
+        state: absent
   when: runner_configured or runner_registered
 
 - name: Refresh services facts
